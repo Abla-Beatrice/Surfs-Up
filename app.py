@@ -60,30 +60,69 @@ def welcome():
 @app.route("/api/v1.0/precipitation")
 def precipitation():
  """Return a dictionary of all percipitation scores for the previous year"""
-    # Query all percipitation scores for the year
-    precipitation_data = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date < '2017-08-24').filter(Measurement.date > '2016-08-23').group_by(Measurement.date).order_by(Measurement.date).all()
+    # Calculate the date 1 year ago from last date in database
+    last_y = dt.date(2017, 8,23) - dt.timedelta(days=365)
 
-# Design a query to show how many stations are available in this dataset?
-session.query(func.count(Station.station)).all()
+    # Query for the date and precipitation for the last year
+    precipitation = session.query(Measurement.date, Measurement.prcp).\
+        filter(Measurement.date >= last_y).all()
 
-# What are the most active stations? (i.e. what stations have the most rows)?
-# List the stations and the counts in descending order.
-session.query(Measurement.station, func.count(Measurement.station)).group_by(Measurement.station).order_by(func.count(Measurement.station).desc()).all()
-
-# Using the station id from the previous query, calculate the lowest temperature recorded, 
-# highest temperature recorded, and average temperature of the most active station?
-session.query(func.min(Measurement.tobs), func.max(Measurement.tobs),func.avg(Measurement.tobs)).filter(Measurement.station =="USC00519281").all()
-
-# Choose the station with the highest number of temperature observations.
-# Query the last 12 months of temperature observation data for this station 
-session.query(Measurement.station, func.count(Measurement.id)).\
-    group_by(Measurement.station).order_by(func.count(Measurement.id).desc()).limit(1).all()
+    # Dict
+    precip = {date: prcp for date, prcp in precipitation}
+    return jsonify(precip)
 
 
-# Perform a query to retrieve the temperature data 
-temperature_data = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date < '2017-08-24').filter(Measurement.date > '2016-08-23').filter(Measurement.station == 'USC00519281').\
-    group_by(Measurement.date).order_by(desc(Measurement.date)).all()
-temperature_data
+@app.route("/api/v1.0/stations")
+    def stations():
+        """Retun a list of station."""
+        results = session.query(Station).all()
+
+        # Unravel Results
+        stations = list(np.ravel(results))
+        return jsonify(stations)
 
 
+@app.route("api/v1.0/tobs")
+def tobs():
+    """Retun the temperature observations (tobs) for previous year.""" 
+    # Calculate the date 1 year ago from last date in database
+    last_y = dt.date(2017, 8,23) - dt.timedelta(days=365)
 
+    # Query_date  is "2016-08-23" for the last year query
+    results = session.query(Measurement.tobs).\
+        filter(Measurement.station == 'USC00519281').\
+        filter(Measurement.date >= last_y).all()
+
+    # Unravel Results
+    temps = list(np.ravel(results))
+    return jsonify(temps)
+
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+def stats(start=None, end=None):
+    """Return TMIN, TAVG, TMAX."""
+
+    # Select statement
+    sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
+
+    if not end:
+        # Calculate TMIN, TAVG, TMAX for dates > start
+        results = session.query(*sel).\
+            filter(Measurement.date >= start).all()
+
+        # Unravel Results
+        temps = list(np.ravel(results))
+        return jsonify(temps)
+
+
+        # Calculate TMIN, TAVG, TMAX with start and stop
+        results = session.query(*sel).\
+            filter(Measurement.date >= start).\
+            filter(Measurement.date <= end).all()
+
+        # Unravel Results
+        temps = list(np.ravel(results))
+        return jsonify(temps)
+
+if __name__ == '__main__':
+    app.run()

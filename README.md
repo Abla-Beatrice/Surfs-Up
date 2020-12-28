@@ -23,7 +23,7 @@ Used Python (Pandas, and Matplotlib) and SQLAlchemy to do basic climate analysis
 
 * Ploting the results using the DataFrame `plot` method.
 
-  ![precipitation](Images/precipitation.png)
+  ![precipitation](Figures/Precipitation_Plot.png)
 
 
 ### Station Analysis
@@ -43,7 +43,7 @@ Used Python (Pandas, and Matplotlib) and SQLAlchemy to do basic climate analysis
 
   * Ploting the results as a histogram with `bins=12`.
 
-    ![station-histogram](Images/station-histogram.png)
+    ![station-histogram](Figures/Temperature_Histo.png)
 
 - - -
 
